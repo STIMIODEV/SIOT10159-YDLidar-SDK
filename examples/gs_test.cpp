@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
 
   // CSV 记录
   std::ofstream csv_file;
-  csv_file.open("/home/stimio/workspace/projets/semitan/lidar/ros2_ws/YDLidar-SDK/gs_scan_data.csv", std::ios::out | std::ios::trunc);
+  csv_file.open("/tmp/gs_scan_data.csv", std::ios::out | std::ios::trunc);
   bool csv_header_written = false;
   std::vector<float> header_angles_deg;
 
