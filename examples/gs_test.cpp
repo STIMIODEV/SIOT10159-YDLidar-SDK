@@ -36,6 +36,12 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+#include <chrono>
+#include <iomanip>
+#include <vector>
+#include <ctime>
+#include <cmath>
 #include <core/base/timer.h>
 #include "CYdLidar.h"
 #include "core/common/ydlidar_help.h"
@@ -269,6 +275,12 @@ int main(int argc, char *argv[])
   for (int i=0; i<LIDAR_MAXCOUNT; ++i)
     ts[i] = getms();
 
+  // CSV 记录
+  std::ofstream csv_file;
+  csv_file.open("/home/stimio/workspace/projets/semitan/lidar/ros2_ws/YDLidar-SDK/gs_scan_data.csv", std::ios::out | std::ios::trunc);
+  bool csv_header_written = false;
+  std::vector<float> header_angles_deg;
+
   while (ret && ydlidar::os_isOk())
   {
     if (laser.doProcessSimple(scan))
@@ -284,16 +296,61 @@ int main(int argc, char *argv[])
       	core::common::warn("module[%d] time[%lld]ms", scan.moduleNum, dt);
       else
         core::common::info("module[%d] time[%lld]ms", scan.moduleNum, dt);
+
+      // 输出带有毫秒的人类可读时间戳
+      auto now = std::chrono::system_clock::now();
+      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+      std::time_t tt = std::chrono::system_clock::to_time_t(now);
+      std::tm tm_local;
+#if defined(_WIN32)
+      localtime_s(&tm_local, &tt);
+#else
+      localtime_r(&tt, &tm_local);
+#endif
+      char time_buf[64] = {0};
+      std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_local);
+      std::cout << "point number: " << scan.points.size() << ", timestamp: " << time_buf << "." << std::setfill('0') << std::setw(3) << (ms % 1000) << std::setfill(' ') << std::endl;
       ts[scan.moduleNum] = t;
       //滤波
-      //filter.filter(scan, 0, 0, scan);
-      //打印点云
-      // for (size_t i = 0; i < scan.points.size(); ++i)
-      // {
-      //   const LaserPoint &p = scan.points.at(i);
-      //     printf("%d a %.02f r %.01f\n", int(i), 
-      //       p.angle * 180.0f / M_PI, p.range * 1000.0f);
-      // }
+      filter.filter(scan, 0, 0, scan);
+
+      // 写 CSV 表头（角度，单位：度），仅第一帧写
+      if (!csv_header_written)
+      {
+        header_angles_deg.clear();
+        header_angles_deg.reserve(scan.points.size());
+        csv_file << "timestamp";
+        for (size_t i = 0; i < scan.points.size(); ++i)
+        {
+          const LaserPoint &p = scan.points.at(i);
+          float angle_deg = p.angle * 180.0f / M_PI;
+          header_angles_deg.push_back(angle_deg);
+          csv_file << ",range_" << std::fixed << std::setprecision(6) << angle_deg;
+        }
+        csv_file << "\n";
+        csv_header_written = true;
+      }
+
+      if (csv_header_written && scan.points.size() == header_angles_deg.size())
+      {
+        csv_file << time_buf << "." << std::setfill('0') << std::setw(3) << (ms % 1000) << std::setfill(' ');
+        csv_file << std::fixed;
+        for (size_t i = 0; i < scan.points.size(); ++i)
+        {
+          const LaserPoint &p = scan.points.at(i);
+          csv_file << "," << std::setprecision(6) << p.range;
+        }
+        csv_file << "\n";
+        csv_file.flush();
+      }
+
+       for (size_t i = 0; i < scan.points.size(); ++i)
+       {
+         const LaserPoint &p = scan.points.at(i);
+         float height = p.range * cos(p.angle); // 高度 = 距离 * cos(角度)
+           printf("%d a %.02f r %.01f h %.01f\n", int(i), 
+            p.angle * 180.0f / M_PI, p.range * 1000.0f, height * 1000.0f);
+       }
     }
     else
     {
@@ -302,6 +359,8 @@ int main(int argc, char *argv[])
     }
   }
 
+  if (csv_file.is_open())
+    csv_file.close();
   laser.turnOff();
   laser.disconnecting();
 

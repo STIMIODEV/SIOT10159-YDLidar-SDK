@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 project(ydlidar_sdk C CXX)
 
 #########################################################
@@ -50,18 +50,12 @@ include(common/ydlidar_base)
 include(install_package)
 
 #############################################################################
-# Policy CMP0023 allows to mix old and new interfaces of target_link_libraries
+# Policy settings for modern CMake compatibility
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW) # We don't want to mix relative and absolute paths in linker lib lists.
 	cmake_policy(SET CMP0005 NEW) # Escape definitions (-D) strings
-	if(POLICY CMP0053)
-		cmake_policy(SET CMP0053 OLD) # Simplify variable reference and escape sequence evaluation.
-	endif()
-	if(POLICY CMP0037)
-		cmake_policy(SET CMP0037 OLD)  # Allow defining target "test"
-	endif()
-	if(POLICY CMP0043)
-		cmake_policy(SET CMP0043 OLD) #  Ignore COMPILE_DEFINITIONS_<Config> properties.
+	if(POLICY CMP0148)
+		cmake_policy(SET CMP0148 NEW) # Use FindPython3 instead of deprecated FindPythonInterp/FindPythonLibs
 	endif()
 endif()
 
@@ -75,8 +69,13 @@ option( BUILD_TEST "Build Test." OFF)
 ############################################################################
 # find package
 find_package(SWIG)
-find_package(PythonInterp)
-find_package(PythonLibs)
+# Use modern Python finding instead of deprecated modules
+find_package(Python3 COMPONENTS Interpreter Development)
+if(NOT Python3_FOUND)
+    # Fallback to old method if Python3 not found
+    find_package(PythonInterp)
+    find_package(PythonLibs)
+endif()
 find_package(GTest)
 
 ############################################################################
@@ -121,7 +120,11 @@ ydlidar_add_library(${PROJECT_NAME} STATIC ${SDK_SOURCES} ${SDK_HEADERS} ${GENER
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${SDK_LIBS})
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:include/src>
+)
 
 #############################################################################################
 #static library
@@ -140,7 +143,7 @@ enable_testing()
 
 ############################################################################
 # build ydlidar sdk python version
-if(${SWIG_FOUND} AND ${PYTHONLIBS_FOUND})
+if(SWIG_FOUND AND (Python3_FOUND OR PYTHONLIBS_FOUND))
     message(STATUS "build python API....")
     include_directories(python)
     add_subdirectory(python)
