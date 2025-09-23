@@ -314,43 +314,27 @@ int main(int argc, char *argv[])
       //滤波
       filter.filter(scan, 0, 0, scan);
 
-      // 写 CSV 表头（角度，单位：度），仅第一帧写
-      if (!csv_header_written)
-      {
-        header_angles_deg.clear();
-        header_angles_deg.reserve(scan.points.size());
-        csv_file << "timestamp";
-        for (size_t i = 0; i < scan.points.size(); ++i)
-        {
-          const LaserPoint &p = scan.points.at(i);
-          float angle_deg = p.angle * 180.0f / M_PI;
-          header_angles_deg.push_back(angle_deg);
-          csv_file << ",range_" << std::fixed << std::setprecision(6) << angle_deg;
-        }
-        csv_file << "\n";
-        csv_header_written = true;
-      }
 
-      if (csv_header_written && scan.points.size() == header_angles_deg.size())
+      if (csv_file.is_open())
       {
         csv_file << time_buf << "." << std::setfill('0') << std::setw(3) << (ms % 1000) << std::setfill(' ');
         csv_file << std::fixed;
         for (size_t i = 0; i < scan.points.size(); ++i)
         {
           const LaserPoint &p = scan.points.at(i);
-          csv_file << "," << std::setprecision(6) << p.range;
+          csv_file << std::setprecision(6) <<  p.angle  << "," << std::setprecision(6) << p.range;
         }
         csv_file << "\n";
         csv_file.flush();
       }
 
-       for (size_t i = 0; i < scan.points.size(); ++i)
-       {
-         const LaserPoint &p = scan.points.at(i);
-         float height = p.range * cos(p.angle); // 高度 = 距离 * cos(角度)
-           printf("%d a %.02f r %.01f h %.01f\n", int(i), 
-            p.angle * 180.0f / M_PI, p.range * 1000.0f, height * 1000.0f);
-       }
+       //for (size_t i = 0; i < scan.points.size(); ++i)
+       //{
+       //  const LaserPoint &p = scan.points.at(i);
+       //  float height = p.range * cos(p.angle); // 高度 = 距离 * cos(角度)
+       //    printf("%d a %.02f r %.01f h %.01f\n", int(i), 
+       //     p.angle * 180.0f / M_PI, p.range * 1000.0f, height * 1000.0f);
+       //}
     }
     else
     {
