@@ -73,16 +73,20 @@ using namespace ydlidar;
 
 // 2024110800141338
 
-bool CorrectLidar(std::string serialNumber, std::string serialNumberToCheck){
-  
-  if (serialNumber == serialNumberToCheck){
-    return true;
-  }
-  return false;
+int CorrectLidar(std::string serialNumber, std::string serialNumberToCheck) {
+    std::cout << "SerialNumber : " << serialNumber << std::endl;
+    std::cout << "SerialNumberToCheck : " << serialNumberToCheck << std::endl;
+    if (serialNumber == serialNumberToCheck) {
+        std::cout << "CorrectLidar success" << std::endl;
+        return 0;
+    } else {
+        std::cout << "CorrectLidar failed" << std::endl;
+        return -1;
+    }
+    return -1;
 }
 
-int main(int argc, char *argv[]) 
-{
+int main(int argc, char *argv[]) {
   printf("__   ______  _     ___ ____    _    ____  \n");
   printf("\\ \\ / /  _ \\| |   |_ _|  _ \\  / \\  |  _ \\ \n");
   printf(" \\ V /| | | | |    | || | | |/ _ \\ | |_) | \n");
@@ -97,8 +101,8 @@ int main(int argc, char *argv[])
   std::map<std::string, std::string>::iterator it;
 
   ports["IP1"] = "192.168.1.200";
-  if(argc == 0){ // if we have one id
-    return -1;
+  if (argc == 0) { // if we have one id
+      return -1;
   }
   std::cout << argv[1] << std::endl;
   std::string string_to_check = argv[1];
@@ -116,14 +120,18 @@ int main(int argc, char *argv[])
   //laserLoop.setEnableDebug(true);
   bool ret = true;
   int id = 0;
-  std::cout << "############ looping in devices ###############" <<std::endl;
   CYdLidar laserGlobal;
   for (it = ports.begin(); it != ports.end(); it++) { // we loop in all ports to find the lidar we want
-    CYdLidar laserLoop;    
+    std::cout << "############ looping in devices ###############" <<std::endl;
+    CYdLidar laserLoop;
+    if(laserLoop.isScanning()){
+      std::cout << "Already in use" << std::endl;
+      continue;// if the LIDAR is already used, jump to next iteration
+    }    
     printf("[%d] %s %s\n", id, it->first.c_str(), it->second.c_str());
     port = it->second;
     id++;
-    if(it->second.find("USB") != std::string::npos){ // Lidars are only on USBs ports
+    if (it->second.find("USB") != std::string::npos) { // Lidars are only on USBs ports
       laserLoop.setlidaropt(LidarPropSerialPort, port.c_str(), port.size()); // setting the port
       //////////////////////int property/////////////////
       ignore_array.clear();
@@ -182,19 +190,19 @@ int main(int argc, char *argv[])
       laserLoop.setlidaropt(LidarPropMinRange, &f_optvalue, sizeof(float));
       // unit: Hz
       laserLoop.setlidaropt(LidarPropScanFrequency, &frequency, sizeof(float));
-      if (!laserLoop.initialize())
-      {
-        fprintf(stderr, "Fail to initialize %s\n", laserLoop.DescribeError());
-        fflush(stderr);
-        return -1;
+      if (!laserLoop.initialize()) {
+          fprintf(stderr, "Fail to initialize %s\n", laserLoop.DescribeError());
+          fflush(stderr);
+          continue; // if can(t initialize this one, jump to nxt iteration
       }
-    }else{
-      continue;
+    } else {
+        continue;
     }
     //////////////////////string property/////////////////
     /// lidar port
     std::vector<device_info_ex> disLoop;
     std:string sn;
+    std::cout << "before getDeviceInfo" << std::endl;
     laserLoop.getDeviceInfo(disLoop); // retrieving infos of the LIDARD
     // formatting
     for (int i = 0; i < SDK_SNLEN; i++){
@@ -202,18 +210,15 @@ int main(int argc, char *argv[])
     } //整型值转字符值
     std::cout << "first get device info" << std::endl;
     std::cout << sn << std::endl;
-    bool ret_bool = CorrectLidar(sn, string_to_check);
-    if (ret_bool){  // if the serial number is correct, it's the one that was setted in the command line
-      std::cout << "CorrectLidar success" << std::endl;
+    if (!(CorrectLidar(sn, string_to_check) < 0)) {  // if the serial number is correct, it's the one that was setted in the command line
       //启动扫描
       laserLoop.initialize();
       ret = laserLoop.turnOn();
       std::cout << "turning on laser" << std::endl;
-      if (!ret)
-      {
-        fprintf(stderr, "Fail to turn on %s\n", laserLoop.DescribeError());
-        fflush(stderr);
-        return -1;
+      if (!ret) {
+          fprintf(stderr, "Fail to turn on %s\n", laserLoop.DescribeError());
+          fflush(stderr);
+          continue;
       }
 
       LaserScan scan;
@@ -240,10 +245,8 @@ int main(int argc, char *argv[])
       std::vector<float> header_angles_deg;
 
       // Starting datalogginf process
-      while (ret && ydlidar::os_isOk())
-      {
-        if (laserLoop.doProcessSimple(scan))
-        {
+      while (ret && ydlidar::os_isOk()) {
+          if (laserLoop.doProcessSimple(scan)) {
           //printf("Module [%d] [%d] points in [%.02f]Hz\n",
           // scan.moduleNum,
           // int(scan.points.size()),
@@ -251,11 +254,6 @@ int main(int argc, char *argv[])
           //打印帧间隔
           uint32_t t = getms();
           uint32_t dt = t - ts[scan.moduleNum];
-          if (dt > 150)
-            core::common::warn("module[%d] time[%lld]ms", scan.moduleNum, dt);
-          else
-            core::common::info("module[%d] time[%lld]ms", scan.moduleNum, dt);
-
           // 输出带有毫秒的人类可读时间戳
           auto now = std::chrono::system_clock::now();
           auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
@@ -268,14 +266,13 @@ int main(int argc, char *argv[])
     #endif
           char time_buf[64] = {0};
           std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_local);
-          std::cout << "point number: " << scan.points.size() << ", timestamp: " << time_buf << "." << std::setfill('0') << std::setw(3) << (ms % 1000) << std::setfill(' ') << std::endl;
+          // std::cout << "point number: " << scan.points.size() << ", timestamp: " << time_buf << "." << std::setfill('0') << std::setw(3) << (ms % 1000) << std::setfill(' ') << std::endl;
           ts[scan.moduleNum] = t;
           //滤波
           filter.filter(scan, 0, 0, scan);
 
 
-          if (csv_file.is_open())
-          {
+          if (csv_file.is_open()) {
             csv_file << time_buf << "." << std::setfill('0') << std::setw(3) << (ms % 1000) << std::setfill(' ');
             csv_file << std::fixed;
             for (size_t i = 0; i < scan.points.size(); ++i)
@@ -287,31 +284,24 @@ int main(int argc, char *argv[])
             csv_file.flush();
           }
 
-          for (size_t i = 0; i < scan.points.size(); ++i)
-          {
-            const LaserPoint &p = scan.points.at(i);
-            float height = p.range * cos(p.angle); // 高度 = 距离 * cos(角度)
+          for (size_t i = 0; i < scan.points.size(); ++i) {
+              const LaserPoint &p = scan.points.at(i);
+              float height = p.range * cos(p.angle); // 高度 = 距离 * cos(角度)
               // printf("%d a %.02f r %.01f h %.01f\n", int(i), 
               // p.angle * 180.0f / M_PI, p.range * 1000.0f, height * 1000.0f);
           }
-        }
-        else
-        {
-          fprintf(stderr, "Failed to get Lidar Data\n");
+        } else {
+          fprintf(stderr, "APP : Failed to get Lidar Data\n");
           fflush(stderr);
         }
       }
 
-      if (csv_file.is_open()){
-        csv_file.close();
+      if (csv_file.is_open()) {
+          csv_file.close();
       }
-      laserLoop.turnOff();
+
+    }else{
       laserLoop.disconnecting();
-
-      return 0;
-
-    }else{ // if it's not the one we are waiting for
-      std::cout << "CorrectLidar failed" << std::endl;
     }
   }
   return 0;
