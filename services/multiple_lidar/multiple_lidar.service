@@ -6,3 +6,6 @@ Type=simple
 RemainAfterExit=no
 ExecStart=(/usr/bin/multiple_lidar 2025072100143719 &);sleep 20;(/usr/bin/multiple_lidar 2025072100143718 &);sleep 20;(/usr/bin/multiple_lidar 2024110800141338 &);sleep 20;(/usr/bin/multiple_lidar 2025072100143686 &);sleep 20;(/usr/bin/multiple_lidar 2023020800140659 &);sleep 20;(/usr/bin/multiple_lidar 2023020800140587 &)
 ExecStop=pkill 'multiple_lidar'
+
+[Install]
+WantedBy=multi-user.target

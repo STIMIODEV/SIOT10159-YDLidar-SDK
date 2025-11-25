@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
   int baudrate = 921600; // the baudrate is fixed now
 
   if (!ydlidar::os_isOk()) {
-    return 0;
+    return -1;
   }
 
   bool isSingleChannel = false;
