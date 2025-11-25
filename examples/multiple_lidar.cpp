@@ -200,7 +200,6 @@ int main(int argc, char *argv[]) {
     std::cout << sn << std::endl;
     if (sn == string_to_check) {  // if the serial number is correct, it's the one that was setted in the command line
       std::cout << "Correct LIDAR found" << std::endl;
-      laserLoop.initialize();
       ret = laserLoop.turnOn();
       std::cout << "turning on laser" << std::endl;
       if (!ret) {
