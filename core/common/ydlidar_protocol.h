@@ -153,7 +153,7 @@
 #define LIDAR_MODULE_2 0x02
 #define LIDAR_MODULE_3 0x04
 #define LIDAR_MODULE_ALL 0x00
-#define LIDAR_MAXCOUNT 3 //最大模组数
+#define LIDAR_MAXCOUNT 60 //最大模组数
 #define LIDAR_PACKMAXNODES TRI_PACKMAXNODES //单包最大点数
 #define LIDAR_MAXNODES 5000 //最大点数
 
@@ -167,7 +167,7 @@
 #define TIMEOUT_500 500 //500ms
 #define TIMEOUT_1S 1000
 #define TIMEOUT_2S 2000
-#define SDK_TIMEOUT TIMEOUT_1S //默认超时时间
+#define SDK_TIMEOUT TIMEOUT_2S //默认超时时间
 //角度定义
 #define SDK_ANGLE360 360.0f
 #define SDK_ANGLE180 180.0f

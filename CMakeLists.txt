@@ -143,11 +143,11 @@ enable_testing()
 
 ############################################################################
 # build ydlidar sdk python version
-if(SWIG_FOUND AND (Python3_FOUND OR PYTHONLIBS_FOUND))
-    message(STATUS "build python API....")
-    include_directories(python)
-    add_subdirectory(python)
-endif()
+# if(SWIG_FOUND AND (Python3_FOUND OR PYTHONLIBS_FOUND))
+#    message(STATUS "build python API....")
+#     include_directories(python)
+#     add_subdirectory(python)
+# endif()
 
 ##############################################
 # build ydlidar sdk c# 
