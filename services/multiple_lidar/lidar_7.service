@@ -1,0 +1,13 @@
+[Unit]
+Description=Multilidar starting service device 7
+PartOf=multiple_lidar_barre_2.target
+
+[Service]
+Type=simple
+RemainAfterExit=no
+ExecStart=/usr/bin/multiple_lidar 2025042800141115
+Restart=always
+ExecStop=pkill 'multiple_lidar 2025042800141115'
+
+[Install]
+WantedBy=multi-user.target

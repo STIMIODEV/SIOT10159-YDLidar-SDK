@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
       LaserScan scan;
       StrongLightFilter filter;
       filter.setStrategy(StrongLightFilter::FS_2);
-      filter.setMaxDist(0.35);
+      filter.setMaxDist(0.035);
       std::map<int, uint32_t> ts;
       for (int i=0; i<LIDAR_MAXCOUNT; ++i)
         ts[i] = getms();
