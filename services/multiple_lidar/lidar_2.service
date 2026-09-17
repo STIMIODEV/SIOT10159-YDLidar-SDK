@@ -7,9 +7,9 @@ PartOf=multiple_lidar_barre_1.target
 Type=simple
 RemainAfterExit=no
 ExecStartPre=/bin/sleep 20
-ExecStart=/usr/bin/multiple_lidar 2025072100143718
+ExecStart=/usr/bin/multiple_lidar 2025072100143718 2
 Restart=always
-ExecStop=pkill 'multiple_lidar 2025072100143718'
+ExecStop=pkill 'multiple_lidar 2025072100143718 2'
 
 [Install]
 WantedBy=multi-user.target

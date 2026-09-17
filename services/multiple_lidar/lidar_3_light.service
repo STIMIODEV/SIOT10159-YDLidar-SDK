@@ -1,7 +1,7 @@
 [Unit]
 Description=Multilidar starting service device 3
-After=lidar_2.service
-PartOf=multiple_lidar_barre_1.target
+After=lidar_1_light.service
+PartOf=multiple_lidar_barre_1_light.target
 
 [Service]
 Type=simple

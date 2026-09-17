@@ -42,6 +42,9 @@
 #include <vector>
 #include <ctime>
 #include <cmath>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <core/base/timer.h>
 #include "CYdLidar.h"
 #include "core/common/ydlidar_help.h"
@@ -51,6 +54,19 @@
 
 using namespace std;
 using namespace ydlidar;
+
+// Fonction pour créer le répertoire s'il n'existe pas
+bool createDirectoryIfNotExists(const std::string& path) {
+    struct stat st = {0};
+    if (stat(path.c_str(), &st) == -1) {
+        if (mkdir(path.c_str(), 0755) == -1) {
+            std::cerr << "Erreur: Impossible de créer le répertoire " << path << std::endl;
+            return false;
+        }
+        std::cout << "Répertoire créé: " << path << std::endl;
+    }
+    return true;
+}
 
 #if defined(_MSC_VER)
 #pragma comment(lib, "ydlidar_sdk.lib")
@@ -87,7 +103,7 @@ int main(int argc, char *argv[]) {
   std::map<std::string, std::string> ports = ydlidar::lidarPortList();
   std::map<std::string, std::string>::iterator it;
 
-  if (argc < 2) { // if we have one id
+  if (argc < 3) { // if we have one id
       return -1;
   }
   std::cout << argv[1] << std::endl;
@@ -99,7 +115,7 @@ int main(int argc, char *argv[]) {
   }
 
   bool isSingleChannel = false;
-  float frequency = 8.0;
+  float frequency = 28.0; // GS2 Lidar frequency can go up to 28Hz
   /// ignore array
   std::string ignore_array;
   bool ret = true;
@@ -211,7 +227,7 @@ int main(int argc, char *argv[]) {
       LaserScan scan;
       StrongLightFilter filter;
       filter.setStrategy(StrongLightFilter::FS_2);
-      filter.setMaxDist(0.35);
+      filter.setMaxDist(0.035);
       std::map<int, uint32_t> ts;
       for (int i=0; i<LIDAR_MAXCOUNT; ++i)
         ts[i] = getms();
@@ -221,9 +237,21 @@ int main(int argc, char *argv[]) {
       std::time_t now_c = std::chrono::system_clock::to_time_t(now);
       std::tm now_tm = *std::localtime(&now_c);
       char time_str[100];
-      std::strftime(time_str, sizeof(time_str), "%Y%m%d_%H%M%S", &now_tm);
+      std::strftime(time_str, sizeof(time_str), "%Y%m%d-%H%M", &now_tm);
       
-      std::string csv_filename = "/tmp/gs_scan_data_" + std::string(time_str) + "_" + sn + ".csv";
+      // Créer le chemin du répertoire dans /data_lidar
+      std::string base_dir = "/data_lidar";
+      std::string time_dir = base_dir + "/" + std::string(time_str);
+      
+      // Créer les répertoires s'ils n'existent pas
+      if (!createDirectoryIfNotExists(base_dir)) {
+          continue;
+      }
+      if (!createDirectoryIfNotExists(time_dir)) {
+          continue;
+      }
+      
+      std::string csv_filename = time_dir + "/lidar_" + (std::ostringstream() << std::setw(2) << std::setfill('0') << std::stoi(argv[2])).str() + ".csv";
       std::ofstream csv_file;
       csv_file.open(csv_filename, std::ios::out | std::ios::trunc);
       bool csv_header_written = false;
