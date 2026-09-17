@@ -1,0 +1,12 @@
+[Unit]
+Description=Multilidar starting service device on bar 1
+Wants=lidar_1_light.service lidar_3_light.service lidar_4_light.service lidar_6_light.service
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+Restart=no
+ExecStart=echo "starting Lidar acquisition"
+
+[Install]
+WantedBy=multi-user.target
